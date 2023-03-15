@@ -1,5 +1,13 @@
 # sound2text-annotator
 
+This is web application project to collect annotation recording and text for sound effect sound.
+
+
+- Firebase Stroage
+- Firebase authentifation
+- TapirWidget (for recording module)
+- Youtube iframe
+
 ## Project setup
 ```
 npm install
