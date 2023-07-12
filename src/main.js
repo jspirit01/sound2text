@@ -14,6 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import YouTube from 'vue3-youtube'
 // import { createManager } from '@vue-youtube/core';
 // import YoutubeVue3 from 'youtube-vue3'
+import 'material-design-icons-iconfont/dist/material-design-icons.css'
 
 library.add(fas)
 

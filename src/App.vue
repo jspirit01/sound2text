@@ -3,11 +3,12 @@
     <v-app-bar>
       <!-- <v-app-bar-nav-icon></v-app-bar-nav-icon> -->
       <v-toolbar-title >SoundLabels</v-toolbar-title>
-      <v-list-item link @click="$router.push('/')">Home</v-list-item>
+      <v-list-item link @click="gohome()">Home</v-list-item>
       <v-list-item link @click="$router.push('/example')">Annotation</v-list-item>
-      <v-btn icon>
+      <!-- <v-list-item link @click="$router.push('/admin')">Admin</v-list-item> -->
+      <!-- <v-btn icon>
         <v-icon>mdi-heart</v-icon>
-      </v-btn>
+      </v-btn> -->
       <!-- <v-btn icon>
         <v-icon>mdi-dots-vertical</v-icon>
       </v-btn> -->
@@ -56,7 +57,13 @@ name: 'App',
     //
   }),
   methods: {
-
+    gohome(){
+      var result = confirm("홈으로 가면 모든 작업이 초기화됩니다. 그래도 가시겠습니까?")
+      if(result){
+        this.$router.push('/')
+      }
+      
+    }
   }
   
 }

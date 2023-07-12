@@ -13,6 +13,16 @@ const routes = [
       name: "example",
       component: () => import(/* webpackChunkName: "about", webpackPrefetch:true */ '../views/ExampleView.vue')
     },
+    { 
+      path: '/admin',
+      name: "admin",
+      component: () => import(/* webpackChunkName: "about", webpackPrefetch:true */ '../views/AdminView.vue')
+    },
+    { 
+      path: '/finish',
+      name: "finish",
+      component: () => import(/* webpackChunkName: "about", webpackPrefetch:true */ '../views/FinishView.vue')
+    },
 
   ]
   
