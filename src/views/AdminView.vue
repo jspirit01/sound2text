@@ -20,18 +20,22 @@
             style=""
         ><span class="material-symbols-outlined">search</span>Search
         </v-btn>
-        
-        <!-- <v-btn 
-        id="btn-show"
-        @click="showList()"
-        variant="outlined"
-        style=""
-        >Show
-        </v-btn> -->
     </div>
-    <!-- <button id='download' @click="load()">Load</button>
-    <button id='show' @click="showList()">Show</button> -->
-
+    <div class="query-content">
+        <span> Firestore Name </span>
+        <input type="text" placeholder="" v-model="firestore_name">
+        <span> Complete Sum </span>
+        <input type="number" placeholder="0~3" v-model="complete_sum">
+        <v-btn
+            id="btn-complete"
+            @click="showCompleteAudioFile()"
+            variant="tonal"
+            density="compact"
+            color='blue'
+            >
+            <span class="material-symbols-outlined">search</span>FIND
+        </v-btn>
+    </div>
     <div>
         <span>Count</span> <span id='search-count'></span>
     </div>
@@ -51,8 +55,9 @@
 </template>
 
 <script>
-import { storage } from '../firebase/init'
+import { storage, db } from '../firebase/init'
 import { ref, getDownloadURL, listAll, getMetadata } from "firebase/storage";
+import { collection, query, where, getDocs } from "firebase/firestore"
 import audioset from "@/assets/audio2.json";
 
 export default {
@@ -64,6 +69,8 @@ export default {
         return {
             storageFolder: "",
             audiofile: "",
+            firestore_name: "samples_esc50",
+            complete_sum: 3,
             workerid: "",
             items: audioset,
             metaDataItems: [],
@@ -88,9 +95,20 @@ export default {
     },
     methods: {
         load(){
-            console.log(this.audiofile)
+            $('.result-content').children('.result-item').remove();
+            var title_row = `<div class='result-item'>
+                <div>ID</div>
+                <div>WAV DOWNLOAD LINK</div>
+                <div>LABEL TEXT</div>
+                <div>CLASS</div>
+                <div>WORKERID</div>
+                <div>SCORE</div>
+                </div>`
+            $('.result-content').append(title_row);
+
+            // console.log(this.audiofile)
             const listRef = ref(storage, this.storageFolder);
-            console.log("storage info : " ,listRef)
+            // console.log("storage info : " ,listRef)
 
             // this.loadMetadataObjectsByClass(listRef, this.audiofile)
             this.loadMetadataObjectsByClass(listRef, this.workerid)
@@ -99,13 +117,13 @@ export default {
 
             var countElem = document.getElementById('search-count')
             countElem.innerHTML = this.metaObjects.length
-            console.log(this.metaObjects)
+            // console.log(this.metaObjects)
             var li_container = document.getElementById('textlabel-list');
             this.metaObjects.forEach(function(elem) {
                 
                 var li = document.createElement('li');
                 
-                console.log(elem.text)
+                // console.log(elem.text)
                 //link the a element to the blob
                 li.innerHTML = elem.text;
                 // li.innerHTML 
@@ -125,7 +143,7 @@ export default {
                             try{
                                 // if (metadata.customMetadata.audio_file == target){
                                 if (metadata.customMetadata.workerid == target){
-                                    console.log(metadata.customMetadata)
+                                    // console.log(metadata.customMetadata)
                                     this.metaObjects.push(metadata.customMetadata)
                                     var label_text = metadata.customMetadata.text
                                     var workerid = metadata.customMetadata.workerid
@@ -179,13 +197,13 @@ export default {
         // },
         createDownloadLink(storageRef, idx, label_text, workerid, classid, satisfy_score){
              getDownloadURL(storageRef).then((geturl) => {
-                console.log(geturl)
+                
                 // This can be downloaded directly:
                 const xhr = new XMLHttpRequest();
                 xhr.responseType = 'blob';
                 xhr.onload = () => {
                     const blob = xhr.response;
-                    console.log(blob)
+                    
                     var url = URL.createObjectURL(blob);
 
                     var result_item = document.createElement('div');
@@ -250,6 +268,75 @@ export default {
 
                 return geturl
             });
+        },
+        async getCompleteSamples(){
+            
+            console.log("getCompleteSamples")
+            // 카테고리가 기타(etc)인 모든 posts 데이터를 가져오는 쿼리
+            // const q = query(collection(db, "samples_fsd50k"), where("complete_sum", "!=", 5));
+            const q = query(collection(db, this.firestore_name), where("complete_sum", "==", this.complete_sum));       // 실제 검색시 에는 숫자 변경
+
+            // getDocs 함수에 위에 정의한 쿼리를 적용해서 모든 문서들을 가져온다.
+            const querySnapshot = await getDocs(q);
+        
+            // 가져온 모든 문서들을 확인하고, json object로 변환
+            var completeItems = []
+            var i = 0 
+            querySnapshot.forEach((doc) => {
+                completeItems[i] = {
+                    "audio_file": doc.data().audio_file, 
+                    "id": doc.data().id, 
+                    "class": doc.data().class,
+                    "complete_sum": doc.data().complete_sum
+                }
+                i++;
+            });
+            return completeItems
+            
+        },
+        showCompleteAudioFile(){
+            console.log(this.firestore_name, typeof(this.complete_sum))
+            this.getCompleteSamples()
+            .then((completeItems) => {
+                $('.result-content').children('.result-item').remove();
+                var title_row = `<div class='result-item'>
+                <div>ID</div>
+                <div>AUDIO FILE NAME</div>
+                <div>CLASS</div>
+                <div>ID</div>
+                <div># OF ANNOTATIONS</div>
+                </div>`
+                $('.result-content').append(title_row);
+
+                var result_content = document.querySelector('.result-content')
+                completeItems.forEach((item, number) => {
+                    if(number > 10) return      // 실제 검색시에는 지우기
+                var result_item = document.createElement('div');
+                result_item.classList.add("result-item");
+
+                var numberDiv = document.createElement('div')
+                var audiofileDiv = document.createElement('div')
+                var classDiv = document.createElement('div')
+                var idDiv = document.createElement('div')
+                var sumDiv = document.createElement('div')
+
+
+                numberDiv.innerHTML = number;
+                audiofileDiv.innerHTML = item.audio_file;
+                classDiv.innerHTML = item.class;
+                idDiv.innerHTML = item.id;
+                sumDiv.innerHTML = item.complete_sum;
+
+                result_item.appendChild(numberDiv)
+                result_item.appendChild(audiofileDiv)
+                result_item.appendChild(classDiv)
+                result_item.appendChild(idDiv)
+                result_item.appendChild(sumDiv)
+
+                result_content.appendChild(result_item)
+                })
+
+            })
         }
     }
 

@@ -88,8 +88,9 @@
 </template>
 
 <script>
-
-import { collection, addDoc, writeBatch, doc, query, where, getDocs, runTransaction } from "firebase/firestore"
+// import { collection, addDoc, doc, query, where, getDocs, runTransaction } from "firebase/firestore"
+// import { collection, addDoc, writeBatch, doc, query, where, getDocs, runTransaction } from "firebase/firestore"
+import { collection, addDoc, writeBatch, doc, runTransaction } from "firebase/firestore"
 import { auth, db, storage } from '../firebase/init'
 // import TapirWidget from 'vue-audio-tapir';
 // import 'vue-audio-tapir/dist/vue-audio-tapir.css';
@@ -173,10 +174,10 @@ export default {
     }),
 
     created() {
-        this.InitSamplesCollection() // 배포 전에 한번만 실행!!
+        // this.InitSamplesCollection() // 배포 전에 한번만 실행!!
         this.getIncompleteSamples()
             .then((querySnapshot) => {
-                this.randomSamples(querySnapshot, 2)   // sampling 
+                this.randomSamples(querySnapshot, 30)   // sampling 
                 this.sampleInfo= this.items[0];
                 this.totalSampleNum = this.items.length;
                 this.loadAudio();
@@ -193,18 +194,25 @@ export default {
     methods: {
         async InitSamplesCollection(){
             console.log("init sample collection")
-            const batch = writeBatch(db);
-            this.items.forEach(function(elem) {
-                var data = {
-                    audio_file: elem.audio_file,
-                    id: elem.id,
-                    class: elem.class,
-                    complete_sum: 0
-                };
-                const docRef = doc(db, "samples_esc50", elem.audio_file);
-                batch.set(docRef, data);            
-            }, this)
-            await batch.commit();
+            
+            // for(var i=0; i<17; i++){
+                var i=16         // i=5부터 16까지 업로드 필요 (완료!)
+                var item_seg = this.items.slice(i*500,(i+1)*500)
+                console.log(item_seg)
+                const batch = writeBatch(db);
+                item_seg.forEach(function(elem) {
+                    var data = {
+                        audio_file: elem.audio_file,
+                        id: elem.id,
+                        class: elem.class,
+                        complete_sum: 0
+                    };
+                    const docRef = doc(db, "samples_esc50", elem.audio_file);
+                    batch.set(docRef, data);            
+                }, this)
+                await batch.commit();
+            // }
+            
         },
         async updateSampleDoc(audio_file){
             const sfDocRef = doc(db, "samples_esc50", audio_file);
@@ -224,6 +232,7 @@ export default {
             }
         },
         async getIncompleteSamples(){
+            /*
             console.log("getIncompleteSamples")
             // 카테고리가 기타(etc)인 모든 posts 데이터를 가져오는 쿼리
             // const q = query(collection(db, "samples_fsd50k"), where("complete_sum", "!=", 5));
@@ -245,9 +254,12 @@ export default {
                 i++;
             });
             return incompleteItems
+            */
+
+           return this.items
         },
         randomSamples(arr, count) {
-            console.log("random index")
+            // console.log("random index")
             console.log('arr', arr)
             // arr.sort(()=> Math.random() - 0.5);
             
@@ -257,12 +269,12 @@ export default {
             var new_arr = []
             for(var i=0; i<count; i++){
                 const random_idx = Math.floor(Math.random() * arr.length)
-                console.log(random_idx)
+                // console.log(random_idx)
                 new_arr.push(arr[random_idx])
             }
             this.items = new_arr
             
-            console.log("random index done")
+            // console.log("random index done")
             console.log('total samples length', this.items.length)
             
         },
@@ -282,25 +294,23 @@ export default {
         // },
         loadAudio(){
             
-            const audioElem = document.getElementById('audio-player')
-            console.log(audioElem)
-
+            
             // for local collection (load audio from local storage)
             // console.log(require('../assets/pilot/'+this.sampleInfo.audio_file))
             // audioElem.src= require('../assets/pilot/'+this.sampleInfo.audio_file)
 
             // for online collection (load audio from Firebase storage)
             const storageRef = ref(storage, 'ESC50/'+ this.sampleInfo.audio_file);
-            console.log(storageRef)
+            // console.log(storageRef)
             getDownloadURL(storageRef).then((geturl) => {
-                console.log(geturl);
+                // console.log(geturl);
                 
                 // This can be downloaded directly:
                 const xhr = new XMLHttpRequest();
                 xhr.responseType = 'blob';
                 xhr.onload = () => {
                     const blob = xhr.response;
-                    console.log(blob)
+                    // console.log(blob)
                     
                     var blobUrl = URL.createObjectURL(blob);
                     this.sampleBlob = blobUrl;
@@ -319,7 +329,7 @@ export default {
             this.$refs.youtube.player.playVideo();
             // this.$refs.youtube.seekTo(this.sampleInfo.start)
             // this.$refs.youtube.playVideo()
-            console.log(this.$refs.youtube)
+            // console.log(this.$refs.youtube)
         },
         onPause() {
             this.$refs.youtube.player.pauseVideo();
@@ -329,7 +339,7 @@ export default {
         changeBtnColor() {
             const theme = useTheme();
             const mode = theme.global.name.value;
-            console.log(mode)
+            // console.log(mode)
 
             if(mode == 'dark'){
                 $('.btn-back').attr("src", "require('@/assets/back.png')")
@@ -405,6 +415,7 @@ export default {
                 //     alert("It's the last sample!")
                 // }
                 alert("It's the last sample!")
+                this.$router.replace('finish')
             }
             
         },
@@ -435,7 +446,7 @@ export default {
 
             // console.log(blob)
             // console.log(this.label.text)
-            console.log(this.rating)
+            // console.log(this.rating)
             // 레코드가 안 되어있으면 submit 하지 않음
             if (!blob || this.label.text == '' || this.rating == 0) {
                 alert("You must answer all the questions.")
@@ -504,15 +515,15 @@ export default {
             
             // upload storage
             const storageRef = ref(storage, 'esc50_annotated/'+ this.recording_file_name+'.wav');
-            console.log("storage info : " ,storageRef)
+            // console.log("storage info : " ,storageRef)
             uploadBytes(storageRef, blob, metadata_storage).then(() => {
                 console.log('Uploaded a blob or file!');
             });
 
-            console.log("#1")
+            // console.log("#1")
             // const storage = getStorage();
             getDownloadURL(storageRef).then((geturl) => {
-                console.log(geturl)
+                // console.log(geturl)
                 const metadata = {
                     // (( 1st pilot ))
                     // sampleId: this.sampleInfo.id,
@@ -531,8 +542,8 @@ export default {
                 }
                 this.sendFireStore("labels_esc50", metadata)
 
-                console.log(this.sampleInfo.audio_file)
-                console.log("update", this.sampleIdx)
+                // console.log(this.sampleInfo.audio_file)
+                // console.log("update", this.sampleIdx)
                 this.updateSampleDoc(this.sampleInfo.audio_file).then(()=>
                 {
                     // if user submitted, enable to next
@@ -575,7 +586,7 @@ export default {
                 // xhr.send();
                 // return url
             });
-            console.log("#2")
+            // console.log("#2")
             
             
             
